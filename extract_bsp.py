@@ -16,12 +16,21 @@ from bsp.surfaces import read_surfaces
 from bsp.visibility import read_visibility
 from bsp.lightmaps import write_lightmaps_bmp
 from bsp.lightgrid import write_light_grid_csv
+import csv
 import json
 
 def write_json(out_dir: Path, filename: str, obj) -> None:
     target = out_dir / filename
     with target.open("w", encoding="utf-8") as fh:
         json.dump(obj, fh, indent=2)
+    print(f"  wrote {target.name}")
+
+def write_csv(out_dir: Path, filename: str, rows: list[dict]) -> None:
+    target = out_dir / filename
+    with target.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
     print(f"  wrote {target.name}")
 
 def main() -> None:
@@ -42,7 +51,6 @@ def main() -> None:
         ("leaf_brushes.json",  read_leaf_brushes),
         ("models.json",        read_models),
         ("brushes.json",       read_brushes),
-        ("brush_sides.json",   read_brush_sides),
         ("draw_verts.json",    read_draw_verts),
         ("draw_indexes.json",  read_draw_indexes),
         ("fogs.json",          read_fogs),
@@ -53,6 +61,7 @@ def main() -> None:
     for filename, reader in jobs:
         write_json(out_dir, filename, reader(lumps))
 
+    write_csv(out_dir, "brush_sides.csv", read_brush_sides(lumps))
     write_lightmaps_bmp(out_dir, lumps)
     write_light_grid_csv(out_dir, lumps)
 

@@ -12,7 +12,7 @@ def find_sky_by_texture(shaders: list[dict], keywords: list[str]) -> list[int]:
     return [i for i, s in enumerate(shaders) if any(keyword in s["shader"].lower() for keyword in keywords)]
 
 
-SKIPLIST_PATH = Path(__file__).parent / "skiplist.txt"
+SKIPLIST_PATH = Path(__file__).parent / "input" / "skiplist.txt"
 
 def main() -> None:
     with (OUTPUT_DIR / "shaders.csv").open(encoding="utf-8", newline="") as fh:

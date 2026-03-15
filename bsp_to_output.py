@@ -36,17 +36,48 @@ def write_csv(out_dir: Path, filename: str, rows: list[dict]) -> None:
         writer.writerows(rows)
     print(f"  wrote {target.name}")
 
+def _load_texture_extensions(textures_file: Path) -> dict[str, str]:
+    ext_map: dict[str, str] = {}
+    with textures_file.open(encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            p = Path(line)
+            key = p.with_suffix("").as_posix()
+            ext_map[key] = p.suffix
+    return ext_map
+
+
+# The if key in ext_map guard means only shaders that have a matching entry in textures.txt get an extension appended — anything else (noshader, flareShader, models/..., etc.) is left unchanged.
+
+# For models/... shaders: removeprefix("textures/") doesn't strip anything, so the key becomes models/mapobjects/foo. If textures.txt has that path, it will match; if not, it's left alone 
+
+def _apply_shader_extensions(shaders: list[dict], ext_map: dict[str, str]) -> list[dict]:
+    for s in shaders:
+        name: str = s["shader"]
+        key = name.removeprefix("textures/")
+        if key in ext_map:
+            s["shader"] = name + ext_map[key]
+    return shaders
+
+
 def main() -> None:
     bsp_path = Path(__file__).parent / "q3dm17.bsp"
     out_dir  = Path(__file__).parent / "output"
     out_dir.mkdir(exist_ok=True)
 
+    textures_file = Path(__file__).parent / "input" / "textures.txt"
+    ext_map = _load_texture_extensions(textures_file)
+
     print(f"parsing {bsp_path} ...")
     lumps = load_bsp(bsp_path)
 
+    shaders = _apply_shader_extensions(read_shaders(lumps), ext_map)
+    write_json(out_dir, "shaders.json", shaders)
+
     jobs = [
         ("entities.json",      read_entities),
-        ("shaders.json",       read_shaders),
         ("planes.json",        read_planes),
         ("nodes.json",         read_nodes),
         ("leafs.json",         read_leafs),

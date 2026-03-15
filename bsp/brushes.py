@@ -1,8 +1,21 @@
 from dataclasses import asdict
 
 from bsp.binary_reader import BinaryReader
-from bsp.models import Brush, BrushSide
 from bsp.reader import LUMP_BRUSH_SIDES, LUMP_BRUSHES
+from dataclasses import dataclass
+
+@dataclass
+class Brush:
+    first_side: int
+    num_sides: int
+    shader_num: int
+    SIZE = 12
+
+@dataclass
+class BrushSide:
+    plane_num: int
+    shader_num: int
+    SIZE = 8
 
 
 def read_brushes(lumps: list[bytes]) -> list[dict]:

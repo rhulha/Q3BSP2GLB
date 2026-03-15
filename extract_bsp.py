@@ -7,6 +7,7 @@ from bsp.draw_verts import read_draw_indexes, read_draw_verts
 from bsp.entities import read_entities
 from bsp.fogs import read_fogs
 from bsp.leafs import read_leaf_brushes, read_leaf_surfaces, read_leafs
+from bsp.models import read_models
 from bsp.nodes import read_nodes
 from bsp.planes import read_planes
 from bsp.reader import load_bsp
@@ -18,21 +19,8 @@ from bsp.lightgrid import write_light_grid_csv
 import csv
 import json
 
-from dataclasses import asdict
 
-from bsp.binary_reader import BinaryReader
-from bsp.models import Model
-from bsp.reader import LUMP_MODELS
 
-def read_models(lumps: list[bytes]) -> list[dict]:
-    br = BinaryReader(lumps[LUMP_MODELS])
-    result = []
-    for _ in range(br.length() // Model.SIZE):
-        result.append(asdict(Model(
-            br.read_floats(3), br.read_floats(3),
-            br.read_int(), br.read_int(), br.read_int(), br.read_int(),
-        )))
-    return result
 
 def write_json(out_dir: Path, filename: str, obj) -> None:
     target = out_dir / filename

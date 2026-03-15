@@ -1,12 +1,16 @@
 from __future__ import annotations
-
 import csv
-
 from pathlib import Path
-
 from .binary_reader import BinaryReader
-from .models import LightGrid
 from .reader import LUMP_LIGHT_GRID
+from dataclasses import dataclass
+
+@dataclass
+class LightGrid:
+    ambient: list[int]
+    directional: list[int]
+    direction: list[int]
+    SIZE = 8
 
 def write_light_grid_csv(out_dir: Path, lumps: list[bytes]) -> None:
     br     = BinaryReader(lumps[LUMP_LIGHT_GRID])

@@ -1,9 +1,16 @@
 from dataclasses import asdict
 
 from bsp.binary_reader import BinaryReader
-from bsp.models import Node
 from bsp.reader import LUMP_NODES
+from dataclasses import dataclass
 
+@dataclass
+class Node:
+    plane_num: int
+    children: list[int]
+    mins: list[int]
+    maxs: list[int]
+    SIZE = 36
 
 def read_nodes(lumps: list[bytes]) -> list[dict]:
     br = BinaryReader(lumps[LUMP_NODES])

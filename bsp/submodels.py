@@ -1,18 +1,8 @@
-from dataclasses import dataclass
-from bsp.binary_reader import BinaryReader
 from dataclasses import asdict
 
+from bsp.binary_reader import BinaryReader
+from bsp.models import Model
 from bsp.reader import LUMP_MODELS
-
-@dataclass
-class Model:
-    mins: list[float]
-    maxs: list[float]
-    first_surface: int
-    num_surfaces: int
-    first_brush: int
-    num_brushes: int
-    SIZE = 40
 
 
 def read_models(lumps: list[bytes]) -> list[dict]:

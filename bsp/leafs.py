@@ -1,8 +1,20 @@
 from dataclasses import asdict
 
 from bsp.binary_reader import BinaryReader
-from bsp.models import Leaf
 from bsp.reader import LUMP_LEAF_BRUSH, LUMP_LEAF_SURF, LUMP_LEAFS
+from dataclasses import dataclass
+
+@dataclass
+class Leaf:
+    cluster: int
+    area: int
+    mins: list[int]
+    maxs: list[int]
+    first_leaf_surface: int
+    num_leaf_surfaces: int
+    first_leaf_brush: int
+    num_leaf_brushes: int
+    SIZE = 48
 
 
 def read_leafs(lumps: list[bytes]) -> list[dict]:

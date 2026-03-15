@@ -1,9 +1,14 @@
 from dataclasses import asdict
 
 from bsp.binary_reader import BinaryReader
-from bsp.models import Plane
 from bsp.reader import LUMP_PLANES
+from dataclasses import dataclass
 
+@dataclass
+class Plane:
+    normal: list[float]
+    distance: float
+    SIZE = 16
 
 def read_planes(lumps: list[bytes]) -> list[dict]:
     br = BinaryReader(lumps[LUMP_PLANES])

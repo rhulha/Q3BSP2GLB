@@ -1,9 +1,15 @@
 from dataclasses import asdict
 
 from bsp.binary_reader import BinaryReader
-from bsp.models import Fog
 from bsp.reader import LUMP_FOGS
+from dataclasses import dataclass
 
+@dataclass
+class Fog:
+    shader: str
+    brush_num: int
+    visible_side: int
+    SIZE = 72
 
 def read_fogs(lumps: list[bytes]) -> list[dict]:
     br = BinaryReader(lumps[LUMP_FOGS])

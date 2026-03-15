@@ -1,9 +1,17 @@
 from dataclasses import asdict
 
 from bsp.binary_reader import BinaryReader
-from bsp.models import Vertex
 from bsp.reader import LUMP_DRAW_IDX, LUMP_DRAW_VERTS
+from dataclasses import dataclass
 
+@dataclass
+class Vertex:
+    xyz: list[float]
+    st: list[float]
+    lightmap: list[float]
+    normal: list[float]
+    color: list[float]
+    SIZE = 44
 
 def read_draw_verts(lumps: list[bytes]) -> list[dict]:
     br = BinaryReader(lumps[LUMP_DRAW_VERTS])

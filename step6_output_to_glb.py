@@ -4,12 +4,11 @@ import struct
 import configparser
 from pathlib import Path
 
-OUTPUT_DIR = "output"
-OUTPUT_GLB = "C:\\Action\\id\\q3unpacked\\map.glb"
-
 _conf = configparser.ConfigParser()
 _conf.read(Path(__file__).parent / "conf.ini")
 TEXTURE_DIR = Path(_conf["paths"]["texture_dir"])
+BASE_DIR = Path(_conf["paths"]["base_dir"])
+OUTPUT_ROOT = Path(__file__).parent / "output"
 TESSELLATION_LEVEL = 5
 
 SURFACE_PLANAR = 1
@@ -35,14 +34,14 @@ def load_texture(shader_name: str):
     return None
 
 
-def read_surfaces():
-    with open(f"{OUTPUT_DIR}/surfaces.json") as f:
+def read_surfaces(out_dir: Path):
+    with open(out_dir / "surfaces.json") as f:
         return json.load(f)
 
 
-def read_draw_verts():
+def read_draw_verts(out_dir: Path):
     verts = []
-    with open(f"{OUTPUT_DIR}/draw_verts.csv") as f:
+    with open(out_dir / "draw_verts.csv") as f:
         reader = csv.DictReader(f)
         for row in reader:
             x, y, z = float(row['x']), float(row['y']), float(row['z'])
@@ -56,13 +55,13 @@ def read_draw_verts():
     return verts
 
 
-def read_draw_indexes():
-    with open(f"{OUTPUT_DIR}/draw_indexes.json") as f:
+def read_draw_indexes(out_dir: Path):
+    with open(out_dir / "draw_indexes.json") as f:
         return json.load(f)
 
 
-def read_shaders():
-    with open(f"{OUTPUT_DIR}/shaders.csv", newline="", encoding="utf-8") as f:
+def read_shaders(out_dir: Path):
+    with open(out_dir / "shaders.csv", newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
@@ -251,20 +250,19 @@ def write_glb(json_data, binary_data, output_path):
             f.write(bin_bytes)
 
 
-def main():
-    print("Reading output data...")
-    surfaces = read_surfaces()
-    draw_verts = read_draw_verts()
-    draw_indexes = read_draw_indexes()
-    shaders = read_shaders()
+def convert_to_glb(out_dir: Path) -> None:
+    glb_path = BASE_DIR / f"{out_dir.name}.glb"
+    print(f"Reading {out_dir.name}...")
+    surfaces = read_surfaces(out_dir)
+    draw_verts = read_draw_verts(out_dir)
+    draw_indexes = read_draw_indexes(out_dir)
+    shaders = read_shaders(out_dir)
 
     print(f"  {len(surfaces)} surfaces, {len(draw_verts)} verts, {len(draw_indexes)} indexes, {len(shaders)} shaders")
 
-    print("Building geometry groups by shader...")
     groups = build_groups(surfaces, draw_verts, draw_indexes, TESSELLATION_LEVEL)
     print(f"  {len(groups)} shader groups")
 
-    print("Packing binary data...")
     binary, buffer_views, accessors, prim_data = pack_primitives(groups)
 
     images = []
@@ -337,9 +335,20 @@ def main():
         gltf["textures"] = textures
         gltf["images"] = images
 
-    print(f"Writing {OUTPUT_GLB}...")
-    write_glb(gltf, binary, OUTPUT_GLB)
-    print(f"Done. {len(binary) // 1024} KB binary data, {len(meshes)} meshes.")
+    write_glb(gltf, binary, glb_path)
+    print(f"  wrote {glb_path}  ({len(binary) // 1024} KB, {len(meshes)} meshes)")
+
+
+def main():
+    subdirs = sorted(p for p in OUTPUT_ROOT.iterdir() if p.is_dir())
+    if not subdirs:
+        print(f"no subdirectories found in {OUTPUT_ROOT}")
+        return
+
+    for out_dir in subdirs:
+        convert_to_glb(out_dir)
+
+    print("all done.")
 
 
 if __name__ == "__main__":

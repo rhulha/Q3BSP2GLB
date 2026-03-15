@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import configparser
+import csv
+import json
 from pathlib import Path
 
 from bsp.brushes import read_brush_sides, read_brushes
@@ -16,8 +19,10 @@ from bsp.surfaces import read_surfaces
 from bsp.visibility import write_visibility_csv
 from bsp.lightmaps import write_lightmaps_bmp
 from bsp.lightgrid import write_light_grid_csv
-import csv
-import json
+
+_conf = configparser.ConfigParser()
+_conf.read(Path(__file__).parent / "conf.ini")
+BASE_DIR = Path(_conf["paths"]["base_dir"])
 
 
 
@@ -62,14 +67,8 @@ def _apply_shader_extensions(shaders: list[dict], ext_map: dict[str, str]) -> li
     return shaders
 
 
-def main() -> None:
-    bsp_path = Path(__file__).parent / "q3dm17.bsp"
-    out_dir  = Path(__file__).parent / "output"
-    out_dir.mkdir(exist_ok=True)
-
-    textures_file = Path(__file__).parent / "input" / "textures.txt"
-    ext_map = _load_texture_extensions(textures_file)
-
+def convert_bsp(bsp_path: Path, out_dir: Path, ext_map: dict[str, str]) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
     print(f"parsing {bsp_path} ...")
     lumps = load_bsp(bsp_path)
 
@@ -142,8 +141,30 @@ def main() -> None:
     write_csv(out_dir, "draw_verts.csv", dv_rows)
     write_lightmaps_bmp(out_dir, lumps)
     write_light_grid_csv(out_dir, lumps)
+    print(f"  done -> {out_dir}")
 
-    print("done.")
+
+def main() -> None:
+    maps_dir = BASE_DIR / "maps"
+    bsp_files = sorted(maps_dir.glob("*.bsp"))
+    if not bsp_files:
+        print(f"no .bsp files found in {maps_dir}")
+        return
+
+    print(f"found {len(bsp_files)} BSP file(s) in {maps_dir}:")
+    for p in bsp_files:
+        print(f"  {p.name}")
+    print()
+
+    out_root = Path(__file__).parent / "output"
+    textures_file = Path(__file__).parent / "input" / "textures.txt"
+    ext_map = _load_texture_extensions(textures_file)
+
+    for bsp_path in bsp_files:
+        out_dir = out_root / bsp_path.stem
+        convert_bsp(bsp_path, out_dir, ext_map)
+
+    print("all done.")
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ import configparser
 from pathlib import Path
 
 OUTPUT_DIR = "output"
-OUTPUT_GLB = "map.glb"
+OUTPUT_GLB = "C:\\Action\\id\\q3unpacked\\map.glb"
 
 _conf = configparser.ConfigParser()
 _conf.read(Path(__file__).parent / "conf.ini")
@@ -62,8 +62,8 @@ def read_draw_indexes():
 
 
 def read_shaders():
-    with open(f"{OUTPUT_DIR}/shaders.json") as f:
-        return json.load(f)
+    with open(f"{OUTPUT_DIR}/shaders.csv", newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
 
 
 def bezier3_vert(p0, p1, p2, t):

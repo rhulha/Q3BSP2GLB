@@ -74,16 +74,12 @@ def main() -> None:
     lumps = load_bsp(bsp_path)
 
     shaders = _apply_shader_extensions(read_shaders(lumps), ext_map)
-    write_json(out_dir, "shaders.json", shaders)
+    write_csv(out_dir, "shaders.csv", shaders)
 
     jobs = [
         ("entities.json",      read_entities),
-        ("planes.json",        read_planes),
-        ("nodes.json",         read_nodes),
-        ("leafs.json",         read_leafs),
         ("leaf_surfaces.json", read_leaf_surfaces),
         ("leaf_brushes.json",  read_leaf_brushes),
-        ("models.json",        read_models),
         ("draw_indexes.json",  read_draw_indexes),
         ("fogs.json",          read_fogs),
         ("surfaces.json",      read_surfaces),
@@ -92,7 +88,44 @@ def main() -> None:
     for filename, reader in jobs:
         write_json(out_dir, filename, reader(lumps))
 
+    node_rows = [
+        {
+            "plane_num": n["plane_num"],
+            "child0": n["children"][0], "child1": n["children"][1],
+            "min_x": n["mins"][0], "min_y": n["mins"][1], "min_z": n["mins"][2],
+            "max_x": n["maxs"][0], "max_y": n["maxs"][1], "max_z": n["maxs"][2],
+        }
+        for n in read_nodes(lumps)
+    ]
+    write_csv(out_dir, "nodes.csv", node_rows)
+
     write_visibility_csv(out_dir, lumps)
+    model_rows = [
+        {
+            "min_x": m["mins"][0], "min_y": m["mins"][1], "min_z": m["mins"][2],
+            "max_x": m["maxs"][0], "max_y": m["maxs"][1], "max_z": m["maxs"][2],
+            "first_surface": m["first_surface"], "num_surfaces": m["num_surfaces"],
+            "first_brush": m["first_brush"], "num_brushes": m["num_brushes"],
+        }
+        for m in read_models(lumps)
+    ]
+    write_csv(out_dir, "models.csv", model_rows)
+    leaf_rows = [
+        {
+            "cluster": l["cluster"], "area": l["area"],
+            "min_x": l["mins"][0], "min_y": l["mins"][1], "min_z": l["mins"][2],
+            "max_x": l["maxs"][0], "max_y": l["maxs"][1], "max_z": l["maxs"][2],
+            "first_leaf_surface": l["first_leaf_surface"], "num_leaf_surfaces": l["num_leaf_surfaces"],
+            "first_leaf_brush": l["first_leaf_brush"], "num_leaf_brushes": l["num_leaf_brushes"],
+        }
+        for l in read_leafs(lumps)
+    ]
+    write_csv(out_dir, "leafs.csv", leaf_rows)
+    plane_rows = [
+        {"nx": p["normal"][0], "ny": p["normal"][1], "nz": p["normal"][2], "distance": p["distance"]}
+        for p in read_planes(lumps)
+    ]
+    write_csv(out_dir, "planes.csv", plane_rows)
     write_csv(out_dir, "brushes.csv", read_brushes(lumps))
     write_csv(out_dir, "brush_sides.csv", read_brush_sides(lumps))
 

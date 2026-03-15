@@ -1,0 +1,7 @@
+textures/skies/blacksky
+models/mapobjects/teleporter/energy
+models/mapobjects/lamps/flare03
+models/mapobjects/spotlamp/beam
+models/mapobjects/lamps/bot_wing
+models/mapobjects/lamps/bot_flare
+models/mapobjects/lamps/bot_flare2

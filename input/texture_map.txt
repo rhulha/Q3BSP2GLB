@@ -1,0 +1,1 @@
+textures/sfx/diamond2cjumppad=textures/sfx/bouncepad01_diamond2cTGA.jpg

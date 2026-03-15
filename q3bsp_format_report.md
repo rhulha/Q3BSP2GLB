@@ -88,3 +88,36 @@ Control points are arranged in a `patch_width × patch_height` grid (always odd 
 | Light Grid | Yes (dynamic entity lighting) |
 | Models (Lump 7) | Partial — only needed for brush entity sub-models |
 | Advertisements | Yes |
+
+---
+
+## Shader Names vs. Texture Files
+
+A surface's `shader_num` indexes into the BSP **Shaders lump**, which stores a *shader name* string (e.g. `textures/sfx/diamond2cjumppad`). This is **not** a texture file path — it is a logical identifier for a shader defined in a `.shader` script file bundled inside the game's `.pk3` archives (under `scripts/`).
+
+The shader script maps that name to the actual texture file(s), blend modes, animations, and surface properties. Example:
+
+```
+textures/sfx/diamond2cjumppad
+{
+    surfaceparm noclip
+    surfaceparm noimpact
+    q3map_surfacelight 100
+    {
+        map textures/sfx/bouncepad01_diamond2cTGA.jpg
+        tcMod scroll 0 1
+        rgbGen wave sin 0.5 0.5 0 1
+    }
+    {
+        map textures/sfx/bouncepad01_diamond2cTGA.jpg
+        blendFunc GL_ONE GL_ONE
+    }
+}
+```
+
+So `textures/sfx/diamond2cjumppad` resolves to `textures/sfx/bouncepad01_diamond2cTGA.jpg` as its diffuse texture — the names are unrelated by convention.
+
+**To resolve what texture to render**, you must:
+1. Extract `.shader` files from the `.pk3` archives.
+2. Parse the shader script that defines the shader name used by the surface.
+3. Read the `map` directive(s) inside the shader stages to find the actual texture file paths.

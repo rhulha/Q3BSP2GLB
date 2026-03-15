@@ -29,5 +29,6 @@ Run the steps in order for each map:
 
 ## Requirements
 
+- Quake 3
 - Python 3
 

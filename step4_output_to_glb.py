@@ -1,11 +1,15 @@
 import json
 import csv
 import struct
-import os
-import sys
+import configparser
+from pathlib import Path
 
 OUTPUT_DIR = "output"
 OUTPUT_GLB = "map.glb"
+
+_conf = configparser.ConfigParser()
+_conf.read(Path(__file__).parent / "conf.ini")
+TEXTURE_DIR = Path(_conf["paths"]["texture_dir"])
 TESSELLATION_LEVEL = 5
 
 SURFACE_PLANAR = 1
@@ -16,6 +20,19 @@ GLTF_FLOAT = 5126
 GLTF_UNSIGNED_INT = 5125
 GLTF_ARRAY_BUFFER = 34962
 GLTF_ELEMENT_ARRAY_BUFFER = 34963
+
+
+def load_texture(shader_name: str):
+    rel = shader_name.removeprefix("textures/")
+    path = TEXTURE_DIR / rel
+    if not path.exists():
+        return None
+    suffix = path.suffix.lower()
+    if suffix in ('.jpg', '.jpeg'):
+        return ('image/jpeg', path.read_bytes())
+    if suffix == '.png':
+        return ('image/png', path.read_bytes())
+    return None
 
 
 def read_surfaces():
@@ -250,10 +267,38 @@ def main():
     print("Packing binary data...")
     binary, buffer_views, accessors, prim_data = pack_primitives(groups)
 
+    images = []
+    textures = []
+    samplers = [{"magFilter": 9729, "minFilter": 9987, "wrapS": 10497, "wrapT": 10497}]
+
+    shader_to_tex: dict[int, int] = {}
+    for i, shader in enumerate(shaders):
+        result = load_texture(shader['shader'])
+        if result is not None:
+            mime, img_bytes = result
+            bv_idx = len(buffer_views)
+            offset = len(binary)
+            binary = binary + img_bytes
+            pad = (4 - len(img_bytes) % 4) % 4
+            binary = binary + b'\x00' * pad
+            buffer_views.append({
+                "buffer": 0,
+                "byteOffset": offset,
+                "byteLength": len(img_bytes),
+            })
+            img_idx = len(images)
+            images.append({"bufferView": bv_idx, "mimeType": mime})
+            tex_idx = len(textures)
+            textures.append({"sampler": 0, "source": img_idx})
+            shader_to_tex[i] = tex_idx
+
     materials = []
     shader_to_material = {}
     for i, shader in enumerate(shaders):
-        materials.append({"name": shader['shader']})
+        mat: dict = {"name": shader['shader'], "doubleSided": True, "pbrMetallicRoughness": {"metallicFactor": 0.0, "roughnessFactor": 1.0}}
+        if i in shader_to_tex:
+            mat["pbrMetallicRoughness"]["baseColorTexture"] = {"index": shader_to_tex[i]}
+        materials.append(mat)
         shader_to_material[i] = i
 
     meshes = []
@@ -287,6 +332,10 @@ def main():
         "bufferViews": buffer_views,
         "buffers": [{"byteLength": len(binary)}],
     }
+    if images:
+        gltf["samplers"] = samplers
+        gltf["textures"] = textures
+        gltf["images"] = images
 
     print(f"Writing {OUTPUT_GLB}...")
     write_glb(gltf, binary, OUTPUT_GLB)

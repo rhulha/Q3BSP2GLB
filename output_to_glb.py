@@ -174,6 +174,9 @@ def pack_primitives(groups):
         normals   = [c for v in verts for c in v['normal']]
         uvs       = [c for v in verts for c in v['uv']]
 
+        # GLTF uses counter-clockwise winding, but Quake 3 uses clockwise, so we need to reverse the order of every triangle
+        indices = [indices[i + j] for i in range(0, len(indices), 3) for j in (2, 1, 0)]
+
         pos_bytes  = struct.pack(f'<{len(positions)}f', *positions)
         norm_bytes = struct.pack(f'<{len(normals)}f', *normals)
         uv_bytes   = struct.pack(f'<{len(uvs)}f', *uvs)
@@ -253,21 +256,32 @@ def main():
         materials.append({"name": shader['shader']})
         shader_to_material[i] = i
 
-    mesh_primitives = []
+    meshes = []
+    nodes = []
     for pd in prim_data:
-        prim = {
-            "attributes": pd["attributes"],
-            "indices": pd["indices"],
-            "material": shader_to_material.get(pd["shader_num"], 0),
-        }
-        mesh_primitives.append(prim)
+        shader_num = pd["shader_num"]
+        shader_name = shaders[shader_num]['shader'] if shader_num < len(shaders) else f"shader_{shader_num}"
+        mesh_idx = len(meshes)
+        meshes.append({
+            "name": shader_name,
+            "primitives": [{
+                "attributes": pd["attributes"],
+                "indices": pd["indices"],
+                "material": shader_to_material.get(shader_num, 0),
+            }]
+        })
+        nodes.append({"name": shader_name, "mesh": mesh_idx})
+
+    SCALE = 0.038
+    root_node_idx = len(nodes)
+    nodes.append({"name": "map", "scale": [SCALE, SCALE, SCALE], "children": list(range(len(nodes)))})
 
     gltf = {
         "asset": {"version": "2.0", "generator": "BSPParserPythonQ3"},
         "scene": 0,
-        "scenes": [{"name": "Scene", "nodes": [0]}],
-        "nodes": [{"name": "map", "mesh": 0}],
-        "meshes": [{"name": "map", "primitives": mesh_primitives}],
+        "scenes": [{"name": "Scene", "nodes": [root_node_idx]}],
+        "nodes": nodes,
+        "meshes": meshes,
         "materials": materials,
         "accessors": accessors,
         "bufferViews": buffer_views,
@@ -276,7 +290,7 @@ def main():
 
     print(f"Writing {OUTPUT_GLB}...")
     write_glb(gltf, binary, OUTPUT_GLB)
-    print(f"Done. {len(binary) // 1024} KB binary data, {len(mesh_primitives)} mesh primitives.")
+    print(f"Done. {len(binary) // 1024} KB binary data, {len(meshes)} meshes.")
 
 
 if __name__ == "__main__":
